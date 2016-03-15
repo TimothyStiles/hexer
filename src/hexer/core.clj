@@ -23,22 +23,16 @@
 
 (defn center-points
   "eventually include x-range y-range."
-  [n] 
-  (let [x1 (map #(* (/ 3 2) %) (range 0 n))
-        x2 (map #(+ (* (/ 3 2) %) (/ 3 4)) (range 0 n))
-        y1 (map #(* % (/ (Math/sqrt 3) 2)) (range 0 n))
-        y2 (map #(- (* % (/ (Math/sqrt 3) 2)) (/ (Math/sqrt 3) 4)) (range 0 n))
-        whole-x (for [y y1
-                      x x1]
-                  [x y])
-        whole-y (for [y y2
-                      x x2]
-                  [x y])
-        ]
-    (partition 2 (flatten [whole-x whole-y]))
-    ;whole-x
-    ))
-
+  ([] (center-points 6))
+  ([n] 
+   (let [xn (int (Math/ceil (/ n 2)))
+         x1 (map #(* (/ 3 2) %) (range 0 xn))
+         x2 (map #(+ (* (/ 3 2) %) (/ 3 4)) (range 0 xn))
+         y1 (map #(* % (/ (Math/sqrt 3) 2)) (range 0 n))
+         y2 (map #(- (* % (/ (Math/sqrt 3) 2)) (/ (Math/sqrt 3) 4)) (range 0 n))
+         whole-x (for [y y1 x x1] [x y])
+         whole-y (for [y y2 x x2] [x y])]
+     (partition 2 (flatten [whole-x whole-y])))))
 
 (defn hex-corner
   "Given a size and number returns corresponding hex edge.
@@ -50,18 +44,27 @@
         y (* size (Math/sin angle-rad))]
     [x y]))
 
-
 (defn hex
   "eventually include t as scalar."
-  []
-  (p/polygon2 (mapv #(hex-corner (/ 1 2) %) (range 6))))
-(hex)
+  ([] (hex (/ 1 2)))
+  ([t]
+   (p/polygon2 (mapv #(hex-corner t  %) (range 6)))))
 
 (defn honey-comb-grid
   []
-  (map #(g/extrude % {:depth (rand-nth (range 1 5)) :mesh (gm/gmesh)}) (map #(g/center (hex) %) (center-points 5)
-                                                                            ;[[0 0] [(/ 3 2) 0] [(/ 3 4) (/ (Math/sqrt 3) 4)]]
-                                                                             )))
+  (map #(g/extrude % {:depth (rand-nth (range 1 5)) :mesh (gm/gmesh)}) (map #(g/center (hex) %) (center-points 6))))
+
+(defn hex-grid
+  []
+  (let [points (center-points 20)
+        hexagons (map #(g/center (hex) %) points)
+        gradient (map #(if (neg? %) 0.2 %) (map #(+ (Math/sin (first %)) (Math/cos (second %))) points))
+        extrusion (map #(g/extrude %1 {:depth %2 :mesh (gm/gmesh)})
+                       hexagons
+                       gradient)
+        solids (reduce g/into extrusion)]
+    solids))
+(save-stl "sin-grid.stl" (hex-grid))
 
 (def mesh
   (-> (hex)
