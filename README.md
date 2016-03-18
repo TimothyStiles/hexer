@@ -2,7 +2,7 @@
 
 
 ## Installation
-https://github.com/TimothyStiles/hexer.git
+<git clone https://github.com/TimothyStiles/hexer.git>
 
 ## Usage
 
