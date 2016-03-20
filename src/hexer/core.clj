@@ -37,7 +37,8 @@
 
 (defn ring-filter
   [radius vec]
-  (and (zero? (reduce + vec)) (= radius (reduce #(+ (Math/abs %1) (Math/abs %2)) vec))))
+  (and (zero? (reduce + vec)) ;(= radius (reduce #(+ (Math/abs %1) (Math/abs %2)) vec))
+       ))
 
 (defn ring
   [radius]
@@ -54,17 +55,6 @@
 (defn flat-cube->pixel
   [vec]
   [(* (first vec) (/ 3 4)) (* (+ (/ (first vec) 2) (second vec)) (/ (Math/sqrt 3) 2))])
-
-(map flat-cube->pixel (round 3))
-
-(round 2)
-;=> [[0 0 0] [-1 0 0] [0 -1 0] [0 0 -1] [0 0 1] [0 1 0] [1 0 0]]
-(map flat-cube->pixel (round 2))
-;([0N 0.0] [-3/4 -0.4330127018922193] [0N -0.8660254037844386] [0N 0.0] [0N 0.0] [0N 0.8660254037844386] [3/4 0.4330127018922193])
-
-(Math/abs -1)
-(range -1 1)
-(hex-ring-cube-points)
 
 (defn hex-corner
   "Given a size and number returns corresponding hex edge.
@@ -88,18 +78,14 @@
 
 (defn hex-grid
   []
-  (let [points (map flat-cube->pixel (round 3)) 
+  (let [points (map flat-cube->pixel (ring 10)) 
         hexagons (map #(g/center (hex) %) points)
-        gradient (map #(if (neg? %) 0.2 %) (map #(+ (Math/sin (first %)) (Math/cos (second %))) points))
+        grad (map #(+ 0.2 (Math/cos (first %)) (Math/cos (second %))) points)
+        gradient (map #(+ (Math/abs (apply min grad)) %) grad)
         extrusion (map #(g/extrude %1 {:depth %2 :mesh (gm/gmesh)})
                        hexagons
                        gradient)
         solids (reduce g/into extrusion)]
     solids))
-(save-stl "sin-grid-radius-3.stl" (hex-grid))
 
-(def mesh
-  (-> (hex)
-      (g/extrude {:depth 4 :mesh (gm/gmesh)})))
-
-(save-stl "hex-grid2.stl" (reduce g/into (honey-comb-grid)))
+(save-stl "ring.stl" (hex-grid))
