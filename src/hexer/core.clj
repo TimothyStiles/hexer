@@ -34,6 +34,38 @@
          whole-y (for [y y2 x x2] [x y])]
      (partition 2 (flatten [whole-x whole-y])))))
 
+
+(defn ring-filter
+  [radius vec]
+  (= radius (reduce #(+ (Math/abs %1) (Math/abs %2)) vec)))
+
+(defn ring
+  [radius]
+  (filter #(ring-filter radius %)
+          (for [dx (range (- radius) (inc radius))
+                dy (range (- radius) (inc radius))
+                dz (range (- radius) (inc radius))]
+            [dx dy dz])))
+
+(defn round 
+  [radius]
+  (mapv vec (partition 3 (flatten (map #(ring %) (range radius))))))
+
+(defn flat-cube->pixel
+  [vec]
+  [(* (first vec) (/ 3 4)) (* (+ (/ (first vec) 2) (second vec)) (/ (Math/sqrt 3) 2))])
+
+(map flat-cube->pixel (round 3))
+
+(round 2)
+;=> [[0 0 0] [-1 0 0] [0 -1 0] [0 0 -1] [0 0 1] [0 1 0] [1 0 0]]
+(map flat-cube->pixel (round 2))
+;([0N 0.0] [-3/4 -0.4330127018922193] [0N -0.8660254037844386] [0N 0.0] [0N 0.0] [0N 0.8660254037844386] [3/4 0.4330127018922193])
+
+(Math/abs -1)
+(range -1 1)
+(hex-ring-cube-points)
+
 (defn hex-corner
   "Given a size and number returns corresponding hex edge.
   Translated from: http://www.redblobgames.com/grids/hexagons/"
@@ -56,7 +88,7 @@
 
 (defn hex-grid
   []
-  (let [points (center-points 20)
+  (let [points (map flat-cube->pixel (round 3)) 
         hexagons (map #(g/center (hex) %) points)
         gradient (map #(if (neg? %) 0.2 %) (map #(+ (Math/sin (first %)) (Math/cos (second %))) points))
         extrusion (map #(g/extrude %1 {:depth %2 :mesh (gm/gmesh)})
@@ -64,7 +96,7 @@
                        gradient)
         solids (reduce g/into extrusion)]
     solids))
-(save-stl "sin-grid.stl" (hex-grid))
+(save-stl "sin-grid-radius-3.stl" (hex-grid))
 
 (def mesh
   (-> (hex)
