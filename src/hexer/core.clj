@@ -37,7 +37,7 @@
 
 (defn ring-filter
   [radius vec]
-  (= radius (reduce #(+ (Math/abs %1) (Math/abs %2)) vec)))
+  (and (zero? (reduce + vec)) (= radius (reduce #(+ (Math/abs %1) (Math/abs %2)) vec))))
 
 (defn ring
   [radius]
