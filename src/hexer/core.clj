@@ -15,12 +15,6 @@
       (mio/wrapped-output-stream out)
       (g/tessellate mesh))))
 
-(defn point-shift
-  [point]
-  (if (odd? (first point))
-    [(first point) (- (second point) (/ 1 2))]
-    [(- (first point) (/ 1 2)) (+ (second point) (/ 1 4))]))
-
 (defn center-points
   "eventually include x-range y-range."
   ([] (center-points 6))
@@ -34,13 +28,16 @@
          whole-y (for [y y2 x x2] [x y])]
      (partition 2 (flatten [whole-x whole-y])))))
 
-
 (defn ring-filter
   [radius vec]
-  (and (zero? (reduce + vec)) ;(= radius (reduce #(+ (Math/abs %1) (Math/abs %2)) vec))
-       ))
+  (and (zero? (reduce + vec))(= radius (reduce #(+ (Math/abs %1) (Math/abs %2)) vec))))
+
+(defn round-filter
+  [vec]
+  (zero? (reduce + vec)))
 
 (defn ring
+  "given radius returns nth ring of cube coordinate centered around 0, 0, 0."
   [radius]
   (filter #(ring-filter radius %)
           (for [dx (range (- radius) (inc radius))
@@ -48,11 +45,17 @@
                 dz (range (- radius) (inc radius))]
             [dx dy dz])))
 
-(defn round 
+(defn round
+  "given radius returns nth radius sized cube coordinates centered around 0, 0, 0."
   [radius]
-  (mapv vec (partition 3 (flatten (map #(ring %) (range radius))))))
+  (filter #(round-filter %)
+          (for [dx (range (- radius) (inc radius))
+                dy (range (- radius) (inc radius))
+                dz (range (- radius) (inc radius))]
+            [dx dy dz])))
 
 (defn flat-cube->pixel
+  "takes flat cube coordinates and maps them to cartesian coordinates."
   [vec]
   [(* (first vec) (/ 3 4)) (* (+ (/ (first vec) 2) (second vec)) (/ (Math/sqrt 3) 2))])
 
@@ -72,13 +75,9 @@
   ([t]
    (p/polygon2 (mapv #(hex-corner t  %) (range 6)))))
 
-(defn honey-comb-grid
-  []
-  (map #(g/extrude % {:depth (rand-nth (range 1 5)) :mesh (gm/gmesh)}) (map #(g/center (hex) %) (center-points 6))))
-
 (defn hex-grid
   []
-  (let [points (map flat-cube->pixel (ring 10)) 
+  (let [points (map flat-cube->pixel (round 10)) 
         hexagons (map #(g/center (hex) %) points)
         grad (map #(+ 0.2 (Math/cos (first %)) (Math/cos (second %))) points)
         gradient (map #(+ (Math/abs (apply min grad)) %) grad)
@@ -88,4 +87,7 @@
         solids (reduce g/into extrusion)]
     solids))
 
-(save-stl "ring.stl" (hex-grid))
+(defn -main
+  "takes no arguments and returns grid defined as hex-grid."
+  [] 
+  (save-stl "ring.stl" (hex-grid)))
